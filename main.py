@@ -65,12 +65,22 @@ def configure_gemini(api_key):
     """Configure Gemini API"""
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        # Test the connection
-        response = model.generate_content("Say 'connected' in one word")
-        st.session_state.gemini_configured = True
-        st.session_state.model = model
-        return True
+        # Try models in order of preference (newest to older)
+        models_to_try = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash-latest']
+        
+        for model_name in models_to_try:
+            try:
+                model = genai.GenerativeModel(model_name)
+                response = model.generate_content("Say 'connected' in one word")
+                st.session_state.gemini_configured = True
+                st.session_state.model = model
+                st.session_state.model_name = model_name
+                return True
+            except Exception:
+                continue
+        
+        st.error("No compatible Gemini model found. Please check your API key.")
+        return False
     except Exception as e:
         st.error(f"Failed to configure Gemini: {str(e)}")
         return False
